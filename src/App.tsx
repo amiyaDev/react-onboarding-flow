@@ -1,4 +1,3 @@
-import { useState, type Dispatch, type SetStateAction } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
@@ -11,7 +10,19 @@ import Step2 from './pages/Onboarding/Step2';
 import Step3 from './pages/Onboarding/Step3';
 import Success from './pages/Success';
 import Home from './pages/Home';
-import type { PersonalProfileData, Song, PaymentData } from './types/onboarding.types';
+import { useAppDispatch, useAppSelector } from './store/hooks';
+import { loginSuccess } from './store/slices/authSlice';
+import {
+  addSong,
+  completeOnboarding,
+  deleteSong,
+  setCurrentStep,
+  setProfileImage,
+  updatePaymentField,
+  updateProfileField,
+  updateSong,
+} from './store/slices/onboardingSlice';
+import type { Song } from './types/onboarding.types';
 
 const createEmptySong = (): Song => ({
   id: crypto.randomUUID(),
@@ -21,90 +32,101 @@ const createEmptySong = (): Song => ({
 
 function LoginRoute() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   return (
     <Login
-      onLogin={() => navigate('/onboarding/step-1')}
+      onLogin={(username) => {
+        dispatch(loginSuccess({ username }));
+        dispatch(setCurrentStep(0));
+        navigate('/onboarding/step-1');
+      }}
       onForgotPassword={() => {}}
     />
   );
 }
 
-function Step1Route({
-  profile,
-  setProfile,
-}: {
-  profile: PersonalProfileData;
-  setProfile: Dispatch<SetStateAction<PersonalProfileData>>;
-}) {
+function Step1Route() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const profile = useAppSelector((state) => state.onboarding.profile);
+
   return (
     <Step1
       data={profile}
-      onChange={(field, value) => setProfile((prev) => ({ ...prev, [field]: value }))}
-      onImageChange={(_file, previewUrl) =>
-        setProfile((prev) => ({ ...prev, profileImageUrl: previewUrl ?? undefined }))
-      }
+      onChange={(field, value) => dispatch(updateProfileField({ field, value }))}
+      onImageChange={(_file, previewUrl) => dispatch(setProfileImage(previewUrl ?? undefined))}
       onPrevious={() => navigate('/')}
-      onNext={() => navigate('/onboarding/step-2')}
+      onNext={() => {
+        dispatch(setCurrentStep(1));
+        navigate('/onboarding/step-2');
+      }}
       showPrevious
     />
   );
 }
 
-function Step2Route({
-  songs,
-  setSongs,
-}: {
-  songs: Song[];
-  setSongs: Dispatch<SetStateAction<Song[]>>;
-}) {
+function Step2Route() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const songs = useAppSelector((state) => state.onboarding.songs);
+
   return (
     <Step2
       songs={songs}
-      onSongChange={(id, field, value) =>
-        setSongs((prev) => prev.map((song) => (song.id === id ? { ...song, [field]: value } : song)))
-      }
-      onAddSong={() => setSongs((prev) => [...prev, createEmptySong()])}
-      onDeleteSong={(id) => setSongs((prev) => prev.filter((song) => song.id !== id))}
-      onPrevious={() => navigate('/onboarding/step-1')}
-      onNext={() => navigate('/onboarding/step-3')}
+      onSongChange={(id, field, value) => dispatch(updateSong({ id, field, value }))}
+      onAddSong={() => dispatch(addSong(createEmptySong()))}
+      onDeleteSong={(id) => dispatch(deleteSong(id))}
+      onPrevious={() => {
+        dispatch(setCurrentStep(0));
+        navigate('/onboarding/step-1');
+      }}
+      onNext={() => {
+        dispatch(setCurrentStep(2));
+        navigate('/onboarding/step-3');
+      }}
     />
   );
 }
 
-function Step3Route({
-  payment,
-  setPayment,
-}: {
-  payment: PaymentData;
-  setPayment: Dispatch<SetStateAction<PaymentData>>;
-}) {
+function Step3Route() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const payment = useAppSelector((state) => state.onboarding.payment);
+
   return (
     <Step3
       data={payment}
-      onChange={(field, value) => setPayment((prev) => ({ ...prev, [field]: value }))}
-      onPrevious={() => navigate('/onboarding/step-2')}
-      onFinish={() => navigate('/success')}
+      onChange={(field, value) => dispatch(updatePaymentField({ field, value }))}
+      onPrevious={() => {
+        dispatch(setCurrentStep(1));
+        navigate('/onboarding/step-2');
+      }}
+      onFinish={() => {
+        dispatch(completeOnboarding());
+        navigate('/success');
+      }}
     />
   );
 }
 
-function SuccessRoute({ fullName }: { fullName: string }) {
+function SuccessRoute() {
   const navigate = useNavigate();
+  const fullName = useAppSelector((state) => state.onboarding.profile.fullName);
   return <Success userName={fullName.split(' ')[0]} onGoToHome={() => navigate('/home')} />;
 }
 
-function HomeRoute({ profile }: { profile: PersonalProfileData }) {
+function HomeRoute() {
+  const profile = useAppSelector((state) => state.onboarding.profile);
+  const isCompleted = useAppSelector((state) => state.onboarding.isCompleted);
+
   return (
     <Home
       profile={{
         fullName: profile.fullName || 'John Doe',
-        email: profile.email || 'sanket@example.com',
+        email: profile.email || 'john@example.com',
         age: profile.age,
         profileImageUrl: profile.profileImageUrl,
-        onboardingCompleted: true,
+        onboardingCompleted: isCompleted,
       }}
       quickActions={[
         {
@@ -147,32 +169,17 @@ function HomeRoute({ profile }: { profile: PersonalProfileData }) {
 }
 
 function App() {
-  const [profile, setProfile] = useState<PersonalProfileData>({ fullName: '', age: '', email: '' });
-  const [songs, setSongs] = useState<Song[]>([createEmptySong()]);
-  const [payment, setPayment] = useState<PaymentData>({
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    cardholderName: '',
-  });
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<LoginRoute />} />
-          <Route
-            path="/onboarding/step-1"
-            element={<Step1Route profile={profile} setProfile={setProfile} />}
-          />
-          <Route path="/onboarding/step-2" element={<Step2Route songs={songs} setSongs={setSongs} />} />
-          <Route
-            path="/onboarding/step-3"
-            element={<Step3Route payment={payment} setPayment={setPayment} />}
-          />
-          <Route path="/success" element={<SuccessRoute fullName={profile.fullName} />} />
-          <Route path="/home" element={<HomeRoute profile={profile} />} />
+          <Route path="/onboarding/step-1" element={<Step1Route />} />
+          <Route path="/onboarding/step-2" element={<Step2Route />} />
+          <Route path="/onboarding/step-3" element={<Step3Route />} />
+          <Route path="/success" element={<SuccessRoute />} />
+          <Route path="/home" element={<HomeRoute />} />
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
