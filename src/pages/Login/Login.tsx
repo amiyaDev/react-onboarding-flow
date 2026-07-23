@@ -1,32 +1,46 @@
-import { useState, type FormEvent } from 'react';
-import {
-  Box,
-  Checkbox,
-  FormControlLabel,
-  Grid,
-  InputAdornment,
-  IconButton,
-  Link,
-  Stack,
-  Typography,
-} from '@mui/material';
-import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
+import { Box, Grid, Link, Stack, Typography } from '@mui/material';
 import RocketLaunchRoundedIcon from '@mui/icons-material/RocketLaunchRounded';
-import Input from '../../components/ui/Input';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import FormTextField from '../../components/form/FormTextField';
+import FormPasswordField from '../../components/form/FormPasswordField';
+import FormCheckboxField from '../../components/form/FormCheckboxField';
 import Button from '../../components/ui/Button';
 import type { LoginProps } from './Login.types';
 
-const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+// Yup validation schema
+const loginValidationSchema = Yup.object().shape({
+  username: Yup.string()
+    .required('Username is required')
+    .min(3, 'Username must be at least 3 characters')
+    .max(50, 'Username must not exceed 50 characters'),
+  password:Yup.string()
+  .required("Password is required")
+  .min(8, "Password must be at least 8 characters")
+  .max(100, "Password must not exceed 100 characters")
+  .matches(/[a-z]/, "Password must contain at least one lowercase letter")
+  .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .matches(/[0-9]/, "Password must contain at least one number")
+  .matches(
+    /[!@#$%^&*()_\-+=[\]{};':"\\|,.<>/?`~]/,
+    "Password must contain at least one special character"
+  ),
+  rememberMe: Yup.boolean(),
+});
 
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    onLogin?.(username, password, rememberMe);
-  };
+const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => {
+  const formik = useFormik({
+    initialValues: {
+      username: '',
+      password: '',
+      rememberMe: false,
+    },
+    validationSchema: loginValidationSchema,
+    onSubmit: (values) => {
+      onLogin?.(values.username, values.password, values.rememberMe);
+    },
+  })
+
 
   return (
     <Grid container sx={{ minHeight: '100vh' }}>
@@ -61,51 +75,37 @@ const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => 
             <Typography variant="subtitle1">Sign in to continue your onboarding journey.</Typography>
           </Stack>
 
-          <Box component="form" onSubmit={handleSubmit}>
+          <Box component="form" onSubmit={formik.handleSubmit}>
             <Stack spacing={2.5}>
-              <Input
+              <FormTextField
                 label="Username"
                 placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                name="username"
+                value={formik.values.username}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.username ? formik.errors.username : undefined}
               />
-              <Input
+
+              <FormPasswordField
                 label="Password"
                 placeholder="Enter your password"
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                slotProps={{
-                  input: {
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end">
-                          {showPassword ? (
-                            <VisibilityOffRoundedIcon fontSize="small" />
-                          ) : (
-                            <VisibilityRoundedIcon fontSize="small" />
-                          )}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  },
-                }}
+                name="password"
+                value={formik.values.password}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                error={formik.touched.password ? formik.errors.password : undefined}
               />
 
               <Stack direction="row" justifyContent="space-between" alignItems="center">
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      size="small"
-                    />
-                  }
+                <FormCheckboxField
                   label={
                     <Typography variant="body2" color="text.secondary">
                       Remember me
                     </Typography>
                   }
+                  checked={formik.values.rememberMe}
+                  onChange={(checked) => formik.setFieldValue('rememberMe', checked)}
                 />
                 <Link
                   component="button"
@@ -119,7 +119,7 @@ const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => 
                 </Link>
               </Stack>
 
-              <Button type="submit" fullWidth loading={isLoading}>
+              <Button type="submit" fullWidth loading={isLoading} disabled={!formik.isValid && formik.dirty}>
                 Log In
               </Button>
             </Stack>
