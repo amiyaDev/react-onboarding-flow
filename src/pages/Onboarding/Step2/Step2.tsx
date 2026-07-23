@@ -1,10 +1,12 @@
 import { Box, Stack, Typography } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import { useFormik, FieldArray, FormikProvider, type FormikErrors } from 'formik';
+import { useFormik, FieldArray, FormikProvider, type FormikErrors, type FieldArrayRenderProps } from 'formik';
+import { useRef, useState } from 'react';
 import * as Yup from 'yup';
 import OnboardingLayout from '../../../layouts/OnboardingLayout';
 import SongCard from '../../../components/SongCard';
 import Button from '../../../components/ui/Button';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog/ConfirmDialog';
 import { ONBOARDING_STEPS } from '../onboardingSteps';
 import type { Step2Props } from './Step2.types';
 import type { Song } from '../../../types/onboarding.types';
@@ -36,6 +38,9 @@ const Step2 = ({ songs, onSubmit, onPrevious }: Step2Props) => {
   const songErrors = formik.errors.songs;
   const songTouched = formik.touched.songs;
   const listLevelError = typeof songErrors === 'string' ? songErrors : undefined;
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null);
+  const arrayHelpersRef = useRef<FieldArrayRenderProps>(null);
 
   return (
     <FormikProvider value={formik}>
@@ -48,8 +53,10 @@ const Step2 = ({ songs, onSubmit, onPrevious }: Step2Props) => {
         onNext={() => formik.handleSubmit()}
       >
         <FieldArray name="songs">
-          {(arrayHelpers) => (
-            <Stack spacing={2}>
+          {(arrayHelpers) => {
+            arrayHelpersRef.current = arrayHelpers;
+            return (
+              <Stack spacing={2}>
               {formik.values.songs.length === 0 && (
                 <Box
                   sx={{
@@ -65,27 +72,30 @@ const Step2 = ({ songs, onSubmit, onPrevious }: Step2Props) => {
                 </Box>
               )}
 
-              {formik.values.songs.map((song, index) => {
+                {formik.values.songs.map((song, index) => {
                 const rawEntryError = Array.isArray(songErrors) ? songErrors[index] : undefined;
                 const entryErrors: FormikErrors<Song> | undefined =
                   typeof rawEntryError === 'string' ? undefined : rawEntryError;
                 const entryTouched = Array.isArray(songTouched) ? songTouched[index] : undefined;
 
-                return (
-                  <SongCard
-                    key={song.id}
-                    song={song}
-                    index={index}
-                    onChange={(field, value) => formik.setFieldValue(`songs.${index}.${field}`, value)}
-                    onBlur={(field) => formik.setFieldTouched(`songs.${index}.${field}`, true)}
-                    onDelete={() => arrayHelpers.remove(index)}
-                    errors={{
-                      title: entryTouched?.title ? entryErrors?.title : undefined,
-                      artist: entryTouched?.artist ? entryErrors?.artist : undefined,
-                    }}
-                  />
-                );
-              })}
+                  return (
+                    <SongCard
+                      key={song.id}
+                      song={song}
+                      index={index}
+                      onChange={(field, value) => formik.setFieldValue(`songs.${index}.${field}`, value)}
+                      onBlur={(field) => formik.setFieldTouched(`songs.${index}.${field}`, true)}
+                      onDelete={() => {
+                        setDeletingIndex(index);
+                        setDeleteOpen(true);
+                      }}
+                      errors={{
+                        title: entryTouched?.title ? entryErrors?.title : undefined,
+                        artist: entryTouched?.artist ? entryErrors?.artist : undefined,
+                      }}
+                    />
+                  );
+                })}
 
               {listLevelError && (
                 <Typography variant="body2" sx={{ color: 'error.main' }}>
@@ -101,9 +111,29 @@ const Step2 = ({ songs, onSubmit, onPrevious }: Step2Props) => {
               >
                 Add Song
               </Button>
-            </Stack>
-          )}
+              </Stack>
+            );
+          }}
         </FieldArray>
+
+        <ConfirmDialog
+          open={deleteOpen}
+          title="Delete song"
+          description="Are you sure you want to delete this song?"
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={() => {
+            if (deletingIndex !== null && arrayHelpersRef.current) {
+              arrayHelpersRef.current.remove(deletingIndex);
+            }
+            setDeleteOpen(false);
+            setDeletingIndex(null);
+          }}
+          onClose={() => {
+            setDeleteOpen(false);
+            setDeletingIndex(null);
+          }}
+        />
       </OnboardingLayout>
     </FormikProvider>
   );

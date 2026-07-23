@@ -3,10 +3,24 @@ import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import type { NavbarProps } from './Navbar.types';
+import { useState } from 'react';
+import ConfirmDialog from '../../ui/ConfirmDialog/ConfirmDialog';
 
 const Navbar = ({ userName = 'Guest', userAvatarUrl, onMenuClick, onLogout }: NavbarProps) => {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const handleLogoutClick = () => {
+    setConfirmOpen(true);
+  };
+
+  const handleConfirm = () => {
+    setConfirmOpen(false);
+    onLogout?.();
+  };
+
   return (
-    <Box
+    <>
+      <Box
       sx={{
         display: 'flex',
         alignItems: 'center',
@@ -52,14 +66,26 @@ const Navbar = ({ userName = 'Guest', userAvatarUrl, onMenuClick, onLogout }: Na
           </Typography>
         </Stack>
         {onLogout && (
-          <Tooltip title="Log out">
-            <IconButton onClick={onLogout} sx={{ color: 'text.secondary' }} aria-label="Log out">
-              <LogoutRoundedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+          <>
+            <Tooltip title="Log out">
+              <IconButton onClick={handleLogoutClick} sx={{ color: 'text.secondary' }} aria-label="Log out">
+                <LogoutRoundedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <ConfirmDialog
+              open={confirmOpen}
+              title="Log out"
+              description="Are you sure you want to log out?"
+              confirmLabel="Log out"
+              cancelLabel="Cancel"
+              onConfirm={handleConfirm}
+              onClose={() => setConfirmOpen(false)}
+            />
+          </>
         )}
       </Stack>
     </Box>
+    </>
   );
 };
 
