@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { PersonalProfileData, Song, PaymentData } from '../../types/onboarding.types';
+import type { PersonalProfileData, Song, PaymentData, SavedPaymentMethod } from '../../types/onboarding.types';
 
 export interface OnboardingState {
   currentStep: number;
@@ -7,6 +7,7 @@ export interface OnboardingState {
   profile: PersonalProfileData;
   songs: Song[];
   payment: PaymentData;
+  savedPaymentMethod: SavedPaymentMethod | null;
 }
 
 const initialState: OnboardingState = {
@@ -15,6 +16,7 @@ const initialState: OnboardingState = {
   profile: { fullName: '', age: '', email: '' },
   songs: [{ id: crypto.randomUUID(), title: '', artist: '' }],
   payment: { cardNumber: '', expiryDate: '', cvv: '', cardholderName: '' },
+  savedPaymentMethod: null,
 };
 
 const onboardingSlice = createSlice({
@@ -42,26 +44,14 @@ const onboardingSlice = createSlice({
     setSongs: (state, action: PayloadAction<Song[]>) => {
       state.songs = action.payload;
     },
-    addSong: (state, action: PayloadAction<Song>) => {
-      state.songs.push(action.payload);
-    },
-    updateSong: (
-      state,
-      action: PayloadAction<{ id: string; field: keyof Omit<Song, 'id'>; value: string }>,
-    ) => {
-      const song = state.songs.find((item) => item.id === action.payload.id);
-      if (song) {
-        song[action.payload.field] = action.payload.value;
-      }
-    },
-    deleteSong: (state, action: PayloadAction<string>) => {
-      state.songs = state.songs.filter((song) => song.id !== action.payload);
-    },
     updatePaymentField: (
       state,
       action: PayloadAction<{ field: keyof PaymentData; value: string }>,
     ) => {
       state.payment[action.payload.field] = action.payload.value;
+    },
+    savePaymentMethod: (state, action: PayloadAction<SavedPaymentMethod>) => {
+      state.savedPaymentMethod = action.payload;
     },
     completeOnboarding: (state) => {
       state.isCompleted = true;
@@ -77,10 +67,8 @@ export const {
   updateProfileField,
   setProfileImage,
   setSongs,
-  addSong,
-  updateSong,
-  deleteSong,
   updatePaymentField,
+  savePaymentMethod,
   completeOnboarding,
   resetOnboarding,
 } = onboardingSlice.actions;

@@ -3,10 +3,10 @@ import Navbar from '../Navbar';
 import Sidebar from '../Sidebar';
 import type { LayoutProps } from './Layout.types';
 
-const Layout = ({ children, sidebarItems, userName, userAvatarUrl, onSidebarItemClick }: LayoutProps) => {
+const Layout = ({ children, sidebarItems, userName, userAvatarUrl, onSidebarItemClick, onLogout }: LayoutProps) => {
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Navbar userName={userName} userAvatarUrl={userAvatarUrl} />
+      <Navbar userName={userName} userAvatarUrl={userAvatarUrl} onLogout={onLogout} />
       <Box sx={{ display: 'flex' }}>
         {sidebarItems && sidebarItems.length > 0 && (
           <Sidebar items={sidebarItems} onItemClick={onSidebarItemClick} />

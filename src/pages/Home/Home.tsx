@@ -1,25 +1,11 @@
 import { Avatar, Box, Chip, Grid, Stack, Typography } from '@mui/material';
 import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
-import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
-import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
-import MusicNoteRoundedIcon from '@mui/icons-material/MusicNoteRounded';
-import CreditCardRoundedIcon from '@mui/icons-material/CreditCardRounded';
-import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
-import type { SidebarItem } from '../../components/layout/Sidebar/Sidebar.types';
 import type { HomeProps } from './Home.types';
-
-const DEFAULT_SIDEBAR_ITEMS: SidebarItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: <DashboardRoundedIcon fontSize="small" />, active: true },
-  { id: 'profile', label: 'Profile', icon: <PersonRoundedIcon fontSize="small" /> },
-  { id: 'songs', label: 'Favorite Songs', icon: <MusicNoteRoundedIcon fontSize="small" /> },
-  { id: 'payment', label: 'Payment', icon: <CreditCardRoundedIcon fontSize="small" /> },
-  { id: 'settings', label: 'Settings', icon: <SettingsRoundedIcon fontSize="small" /> },
-];
 
 const ACTIVITY_ICONS = {
   success: <CheckCircleRoundedIcon sx={{ color: 'success.main' }} fontSize="small" />,
@@ -27,9 +13,15 @@ const ACTIVITY_ICONS = {
   warning: <WarningAmberRoundedIcon sx={{ color: '#F59E0B' }} fontSize="small" />,
 };
 
-const Home = ({ profile, quickActions, recentActivity }: HomeProps) => {
+const Home = ({ profile, quickActions, recentActivity, sidebarItems, onSidebarItemClick, onLogout }: HomeProps) => {
   return (
-    <Layout sidebarItems={DEFAULT_SIDEBAR_ITEMS} userName={profile.fullName} userAvatarUrl={profile.profileImageUrl}>
+    <Layout
+      sidebarItems={sidebarItems}
+      onSidebarItemClick={onSidebarItemClick}
+      onLogout={onLogout}
+      userName={profile.fullName}
+      userAvatarUrl={profile.profileImageUrl}
+    >
       <Stack spacing={4}>
         <Card
           sx={{

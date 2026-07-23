@@ -1,4 +1,5 @@
-import { Box, Grid, Link, Stack, Typography } from '@mui/material';
+import type { ChangeEvent } from 'react';
+import { Box, Grid, Link, Stack, Typography, Alert } from '@mui/material';
 import RocketLaunchRoundedIcon from '@mui/icons-material/RocketLaunchRounded';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -6,25 +7,20 @@ import FormTextField from '../../components/form/FormTextField';
 import FormPasswordField from '../../components/form/FormPasswordField';
 import FormCheckboxField from '../../components/form/FormCheckboxField';
 import Button from '../../components/ui/Button';
+import { DEMO_CREDENTIALS, validateCredentials } from '../../utils/authCredentials';
 import type { LoginProps } from './Login.types';
 
-// Yup validation schema
+// Yup validation schema — format checks only; the actual credential match
+// (against the fixed demo user/password) happens in onSubmit below.
 const loginValidationSchema = Yup.object().shape({
   username: Yup.string()
     .required('Username is required')
     .min(3, 'Username must be at least 3 characters')
     .max(50, 'Username must not exceed 50 characters'),
-  password:Yup.string()
-  .required("Password is required")
-  .min(8, "Password must be at least 8 characters")
-  .max(100, "Password must not exceed 100 characters")
-  .matches(/[a-z]/, "Password must contain at least one lowercase letter")
-  .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
-  .matches(/[0-9]/, "Password must contain at least one number")
-  .matches(
-    /[!@#$%^&*()_\-+=[\]{};':"\\|,.<>/?`~]/,
-    "Password must contain at least one special character"
-  ),
+  password: Yup.string()
+    .required('Password is required')
+    .min(6, 'Password must be at least 6 characters')
+    .max(100, 'Password must not exceed 100 characters'),
   rememberMe: Yup.boolean(),
 });
 
@@ -36,10 +32,22 @@ const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => 
       rememberMe: false,
     },
     validationSchema: loginValidationSchema,
-    onSubmit: (values) => {
-      onLogin?.(values.username, values.password, values.rememberMe);
+    onSubmit: (values, { setStatus }) => {
+      if (validateCredentials(values.username, values.password)) {
+        setStatus(undefined);
+        onLogin?.(values.username, values.password, values.rememberMe);
+      } else {
+        setStatus('Invalid username or password.');
+      }
     },
   })
+
+  const handleFieldChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (formik.status) {
+      formik.setStatus(undefined);
+    }
+    formik.handleChange(event);
+  };
 
 
   return (
@@ -77,12 +85,14 @@ const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => 
 
           <Box component="form" onSubmit={formik.handleSubmit}>
             <Stack spacing={2.5}>
+              {formik.status && <Alert severity="error">{formik.status}</Alert>}
+
               <FormTextField
                 label="Username"
                 placeholder="Enter your username"
                 name="username"
                 value={formik.values.username}
-                onChange={formik.handleChange}
+                onChange={handleFieldChange}
                 onBlur={formik.handleBlur}
                 error={formik.touched.username ? formik.errors.username : undefined}
               />
@@ -92,7 +102,7 @@ const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => 
                 placeholder="Enter your password"
                 name="password"
                 value={formik.values.password}
-                onChange={formik.handleChange}
+                onChange={handleFieldChange}
                 onBlur={formik.handleBlur}
                 error={formik.touched.password ? formik.errors.password : undefined}
               />
@@ -122,6 +132,10 @@ const Login = ({ onLogin, onForgotPassword, isLoading = false }: LoginProps) => 
               <Button type="submit" fullWidth loading={isLoading} disabled={!formik.isValid && formik.dirty}>
                 Log In
               </Button>
+
+              <Typography variant="body2" color="text.secondary" textAlign="center">
+                Demo credentials: {DEMO_CREDENTIALS.username} / {DEMO_CREDENTIALS.password}
+              </Typography>
             </Stack>
           </Box>
         </Box>

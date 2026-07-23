@@ -13,8 +13,17 @@ const ProfileImageUpload = ({ imageUrl, onImageChange, size = 112 }: ProfileImag
       onImageChange?.(null, null);
       return;
     }
-    const previewUrl = URL.createObjectURL(file);
-    onImageChange?.(file, previewUrl);
+
+    // Read as a base64 data URL rather than a blob: URL — blob URLs are
+    // tied to the current page's memory and break (and can't be persisted
+    // to localStorage) once the page reloads. A data URL is a plain string
+    // that survives serialization and reload.
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === 'string' ? reader.result : null;
+      onImageChange?.(file, result);
+    };
+    reader.readAsDataURL(file);
   };
 
   return (

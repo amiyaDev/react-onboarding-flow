@@ -7,4 +7,5 @@ export interface LayoutProps {
   userName?: string;
   userAvatarUrl?: string;
   onSidebarItemClick?: (id: string) => void;
+  onLogout?: () => void;
 }

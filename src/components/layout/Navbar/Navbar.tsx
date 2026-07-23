@@ -1,9 +1,10 @@
-import { Avatar, Box, IconButton, Stack, Typography } from '@mui/material';
+import { Avatar, Box, IconButton, Stack, Tooltip, Typography } from '@mui/material';
 import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import type { NavbarProps } from './Navbar.types';
 
-const Navbar = ({ userName = 'Guest', userAvatarUrl, onMenuClick }: NavbarProps) => {
+const Navbar = ({ userName = 'Guest', userAvatarUrl, onMenuClick, onLogout }: NavbarProps) => {
   return (
     <Box
       sx={{
@@ -50,6 +51,13 @@ const Navbar = ({ userName = 'Guest', userAvatarUrl, onMenuClick }: NavbarProps)
             {userName}
           </Typography>
         </Stack>
+        {onLogout && (
+          <Tooltip title="Log out">
+            <IconButton onClick={onLogout} sx={{ color: 'text.secondary' }} aria-label="Log out">
+              <LogoutRoundedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
       </Stack>
     </Box>
   );
